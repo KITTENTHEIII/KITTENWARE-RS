@@ -1,0 +1,19 @@
+[package]
+name = "kittenware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = [
+    "consoleapi",
+    "handleapi",
+    "processenv",
+    "securitybaseapi",
+    "shellapi",
+    "winbase",
+    "wincon",
+    "winnt",
+    "winuser",
+] }

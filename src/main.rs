@@ -1,7 +1,7 @@
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 // ANSI colours
 
@@ -302,21 +302,38 @@ fn clean_temp_files() {
     pause();
 }
 
+#[cfg(windows)]
 fn empty_recycle_bin() {
-    println!("{RED}Emptying Recycle Bin…{RESET}");
-    let ok = Command::new("powershell")
-        .args(["-Command", "Clear-RecycleBin -Force"])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false);
+    use winapi::shared::winerror::HRESULT;
+    use winapi::um::shellapi::SHEmptyRecycleBinW;
 
-    if ok {
+    // Flags: skip confirmation dialog, skip progress UI, skip the empty sound.
+    const SHERB_NOCONFIRMATION: u32 = 0x0000_0001;
+    const SHERB_NOPROGRESSUI: u32 = 0x0000_0002;
+    const SHERB_NOSOUND: u32 = 0x0000_0004;
+    // Returned by SHEmptyRecycleBinW when the bin is already empty on every drive.
+    const E_UNEXPECTED: HRESULT = 0x8000_FFFFu32 as HRESULT;
+
+    println!("{RED}Emptying Recycle Bin…{RESET}");
+
+    let flags = SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND;
+    let hr: HRESULT =
+        unsafe { SHEmptyRecycleBinW(std::ptr::null_mut(), std::ptr::null(), flags) };
+
+    if hr == 0 {
         println!("{GREEN}Recycle Bin emptied successfully.{RESET}");
+    } else if hr == E_UNEXPECTED {
+        println!("{GREEN}Recycle Bin is already empty.{RESET}");
     } else {
-        println!("{RED}Failed to empty Recycle Bin.{RESET}");
+        println!("{RED}Failed to empty Recycle Bin (HRESULT: 0x{:08X}).{RESET}", hr as u32);
     }
+
+    pause();
+}
+
+#[cfg(not(windows))]
+fn empty_recycle_bin() {
+    println!("{YELLOW}Not on Windows – nothing to empty.{RESET}");
     pause();
 }
 

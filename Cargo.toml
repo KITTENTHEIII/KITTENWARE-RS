@@ -14,6 +14,7 @@ winapi = { version = "0.3", features = [
     "shellapi",
     "winbase",
     "wincon",
+    "winerror",
     "winnt",
     "winuser",
 ] }

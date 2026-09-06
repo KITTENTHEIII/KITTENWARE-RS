@@ -40,7 +40,6 @@ const TEMP_LOCATIONS: &[&str] = &[
 
 // Admin helpers
 
-#[cfg(windows)]
 fn is_admin() -> bool {
     use winapi::um::securitybaseapi::{AllocateAndInitializeSid, CheckTokenMembership, FreeSid};
     use winapi::um::winnt::{
@@ -79,12 +78,6 @@ fn is_admin() -> bool {
     }
 }
 
-#[cfg(not(windows))]
-fn is_admin() -> bool {
-    true
-}
-
-#[cfg(windows)]
 fn run_as_admin() {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
@@ -121,20 +114,10 @@ fn run_as_admin() {
     std::process::exit(0);
 }
 
-#[cfg(not(windows))]
-fn run_as_admin() {
-    println!("{YELLOW}Not on Windows – skipping privilege elevation.{RESET}");
-}
-
 // UI helpers
 
 fn clear_screen() {
-    if cfg!(windows) {
-        let _ = Command::new("cmd").args(["/C", "cls"]).status();
-    } else {
-        print!("\x1b[2J\x1b[H");
-        let _ = io::stdout().flush();
-    }
+    let _ = Command::new("cmd").args(["/C", "cls"]).status();
 }
 
 fn pause() {
@@ -302,7 +285,6 @@ fn clean_temp_files() {
     pause();
 }
 
-#[cfg(windows)]
 fn empty_recycle_bin() {
     use winapi::shared::winerror::HRESULT;
     use winapi::um::shellapi::SHEmptyRecycleBinW;
@@ -331,29 +313,20 @@ fn empty_recycle_bin() {
     pause();
 }
 
-#[cfg(not(windows))]
-fn empty_recycle_bin() {
-    println!("{YELLOW}Not on Windows – nothing to empty.{RESET}");
-    pause();
-}
-
 // Main
 
 fn main() {
-    #[cfg(windows)]
-    {
-        use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
-        use winapi::um::handleapi::INVALID_HANDLE_VALUE;
-        use winapi::um::processenv::GetStdHandle;
-        use winapi::um::winbase::STD_OUTPUT_HANDLE;
-        use winapi::um::wincon::ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-        unsafe {
-            let h = GetStdHandle(STD_OUTPUT_HANDLE);
-            if h != INVALID_HANDLE_VALUE {
-                let mut mode: u32 = 0;
-                GetConsoleMode(h, &mut mode);
-                SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-            }
+    use winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
+    use winapi::um::handleapi::INVALID_HANDLE_VALUE;
+    use winapi::um::processenv::GetStdHandle;
+    use winapi::um::winbase::STD_OUTPUT_HANDLE;
+    use winapi::um::wincon::ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    unsafe {
+        let h = GetStdHandle(STD_OUTPUT_HANDLE);
+        if h != INVALID_HANDLE_VALUE {
+            let mut mode: u32 = 0;
+            GetConsoleMode(h, &mut mode);
+            SetConsoleMode(h, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
         }
     }
 
